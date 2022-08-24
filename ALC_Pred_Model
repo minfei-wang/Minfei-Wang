@@ -1,0 +1,119 @@
+
+import numpy
+import sklearn.discriminant_analysis
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn import metrics
+import pandas as pd
+from timeit import default_timer
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_curve, auc
+from sklearn import svm
+from sklearn.model_selection import cross_val_score
+'''load the data file'''
+df = pd.read_excel(r"ALC_GRAPH.xlsx",engine='openpyxl')
+'''Define the columns that from second to the last as input attributes '''
+X= df.iloc[:,1:4].values
+'''Define the first columns(Sex) as output '''
+y=df.iloc[:,0].values
+'''Split the input data for training and testing '''
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
+print("No.Data point:", len(X))
+print("No.Training data:", len(X_train))
+print("No.Testing data:", len(X_test))
+print("-"*30)
+
+'''Start counting time'''
+start=default_timer()
+'''Using LDA'''
+lda = sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
+lda.fit(X_train, y_train)
+end=default_timer()
+y_predlda = lda.predict(X_test)
+'''Calculate accuracy'''
+accuracylda = accuracy_score(y_test, y_predlda)
+end2=default_timer()
+print("LDA:")
+print('Accuracy is:', '%.8f'%accuracylda)
+'''Genrate the confusion matrix'''
+cmlda = confusion_matrix(y_test, y_predlda)
+#print("Confusion Matrix is:")
+#print(cmlda)
+print("Training time (second):", end-start)
+print("Testing time (second):",end2-end)
+#define new observation
+new = [1,0,0]
+new1 = [1,1,1]
+print("Prediction Result:",lda.predict([new]))
+print("Reference:",lda.predict([new1]))
+
+
+
+end3=default_timer()
+abc = AdaBoostClassifier(n_estimators=3,
+                         learning_rate=1)
+model = abc.fit(X_train, y_train)
+end4=default_timer()
+y_pred = model.predict(X_test)
+result_acc=metrics.accuracy_score(y_test, y_pred)
+end5=default_timer()
+print("Adaboost: ")
+print("Accuracy:",result_acc)
+CM = confusion_matrix(y_test, y_pred )
+#print("The Confusion Matrix is ")
+#print(CM)
+print("Prediction Result:",abc.predict([new]))
+print("Reference:",abc.predict([new1]))
+print("Training time (second):", end4-end3)
+print("Testing time (second):",end5-end4)
+y_predict_probabilities = model.predict_proba(X_test)[:,1]
+fpr, tpr, _ = roc_curve(y_test, y_predict_probabilities)
+roc_auc = auc(fpr, tpr)
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange',
+         lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate -->')
+plt.ylabel('True Positive Rate -->')
+plt.title('Adaboost ROC Curve')
+plt.legend(loc="lower right")
+
+
+
+#SVM
+from sklearn.svm import SVC
+from sklearn import svm
+from sklearn.metrics import roc_curve, auc
+'svm'
+print("SVM: ")
+
+clf=svm.SVC(kernel='linear')
+end6=default_timer()
+clf.fit(X_train,y_train)
+end7=default_timer()
+y_preditsvm=clf.predict(X_test)
+print("Accuracy:", metrics.accuracy_score(y_test,y_preditsvm))
+CMsvm = confusion_matrix(y_test, y_preditsvm )
+#print("The Confusion Matrix is ")
+#print(CMsvm)
+end8=default_timer()
+print("Training time")
+print(end7-end6)
+print("Testing time")
+print(end8-end7)
+print("Prediction Result:",clf.predict([new]))
+print("Reference:",clf.predict([new1]))
+#ROC
+svm_fpr, svm_tpr, threshold = roc_curve(y_test,y_preditsvm )
+auc_svm = auc(svm_fpr, svm_tpr)
+plt.figure(figsize=(5, 5), dpi=100)
+plt.plot(svm_fpr, svm_tpr, linestyle='-', label='SVM (auc = %0.3f)' % auc_svm)
+plt.xlabel('False Positive Rate -->')
+plt.ylabel('True Positive Rate -->')
+plt.title('SVM ROC Curve')
+plt.legend()
+plt.show()
